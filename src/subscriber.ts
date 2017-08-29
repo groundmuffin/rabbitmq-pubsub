@@ -15,6 +15,20 @@ export class RabbitMqSubscriber {
         this.logger = createChildLogger(logger, "RabbitMqConsumer");
     }
 
+    _subscribe<T>(queue: string | IQueueNameConfig, action: (message: T) => Promisefy<any> | void): any {
+        const queueConfig = asPubSubQueueNameConfig(queue);
+        return this.connectionFactory.create()
+            .then(connection => connection.createChannel())
+            .then(channel => {
+                this.logger.trace("got channel for queue '%s'", queueConfig.name);
+                return this.setupChannel<T>(channel, queueConfig)
+                    .then((queueName) => {
+                        this.logger.debug("queue name generated for subscription queue '(%s)' is '(%s)'", queueConfig.name, queueName);
+                        var queConfig = { ...queueConfig, dlq: queueName}
+                        return this._subscribeToChannel<T>(channel, queueConfig, action)})
+            });
+    }
+
     subscribe<T>(queue: string | IQueueNameConfig, action: (message: T) => Promisefy<any> | void): Promisefy<IRabbitMqSubscriberDisposer> {
         const queueConfig = asPubSubQueueNameConfig(queue);
         return this.connectionFactory.create()
@@ -56,6 +70,34 @@ export class RabbitMqSubscriber {
                 return Promisefy.resolve(channel.cancel(opts.consumerTag)).return();
             }) as IRabbitMqSubscriberDisposer
         });
+    }
+
+    private _subscribeToChannel<T>(channel: amqp.Channel, queueConfig: IQueueNameConfig, action: (message: T) => Promisefy<any> | void) {
+        this.logger.trace("subscribing to queue '%s'", queueConfig.name);
+        return channel.consume(queueConfig.dlq, (message) => {
+            let msg: T;
+            Promisefy.try(() => {
+                msg = this.getMessageObject<T>(message);
+                this.logger.trace("message arrived from queue '%s' (%j)", queueConfig.name, msg)
+                return action(msg);
+            }).then(() => {
+                this.logger.trace("message processed from queue '%s' (%j)", queueConfig.name, msg)
+                channel.ack(message)
+            }).catch((err) => {
+                this.logger.error(err, "message processing failed from queue '%j' (%j)", queueConfig, msg);
+                channel.nack(message, false, false);
+            });
+        }).then(opts => {
+            this.logger.trace("subscribed to queue '%s' (%s)", queueConfig.name, opts.consumerTag)
+            return (() => {
+                this.logger.trace("disposing subscriber to queue '%s' (%s)", queueConfig.name, opts.consumerTag)
+                return Promisefy.resolve(channel.cancel(opts.consumerTag)).return();
+            }) as IRabbitMqSubscriberDisposer
+        }).then(disposer => ({
+                disposer: disposer,
+                channel: channel
+            })
+        );
     }
 
     protected getMessageObject<T>(message: amqp.Message) {

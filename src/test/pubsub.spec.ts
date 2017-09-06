@@ -55,6 +55,31 @@ describe("RabbitMQ pub sub test", () => {
         })
     });
 
+    it("Subscriber should recieve message from Publisher (with _subscribe method)", (done) => {
+        const spy = sinon.spy()
+        const factory = new RabbitMqConnectionFactory(logger, config);
+        const consumer = new RabbitMqSubscriber(logger, factory)
+        return consumer._subscribe<IMessage>(queueName, spy).then(({disposer, channel}) => {
+            const producer = new RabbitMqPublisher(logger, factory)
+            const msg: IMessage = { data: "time", value: new Date().getTime() };
+
+            return producer.publish<IMessage>(queueName, msg)
+                .then(() => Promise.delay(500))
+                .then(() => {
+                    expect(spy.callCount).toEqual(1);
+                    expect(spy.firstCall.args).toBeTruthy;
+                    expect(spy.firstCall.args.length).toEqual(1);
+                    const consumedMsg = spy.firstCall.args[0] as IMessage;
+                    expect(consumedMsg.data).toBeTruthy;
+                    expect(consumedMsg.data).toEqual(msg.data);
+                    expect(consumedMsg.value).toBeTruthy;
+                    expect(consumedMsg.value).toEqual(msg.value);
+                    disposer();
+                    done();
+                });
+        })
+    });
+
     it("Subscriber should recieve message from Publisher when run seperately each", (done) => {
         const spy = sinon.spy()
         const factory = new RabbitMqConnectionFactory(logger, config);

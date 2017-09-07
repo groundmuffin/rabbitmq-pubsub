@@ -25,9 +25,15 @@ export class RabbitMqSubscriber {
                     .then((queueName) => {
                         this.logger.debug("queue name generated for subscription queue '(%s)' is '(%s)'", queueConfig.name, queueName);
                         var queConfig = { ...queueConfig, dlq: queueName}
-                        return this.subscribeToChannel<T>(channel, queueConfig, action)}
-                      )
-                    .then(disposer => ({disposer, channel}))
+                        return this.subscribeToChannel<T>(channel, queueConfig, action)
+                            .then(disposer => ({
+                                disposer,
+                                subscription: {
+                                    channel,
+                                    queueConfig: queConfig
+                                }
+                            }))
+                    });
             });
     }
 

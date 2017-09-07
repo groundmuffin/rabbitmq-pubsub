@@ -1,6 +1,6 @@
 {
   "name": "@groundmuffin/rabbitmq-pub-sub",
-  "version": "0.2.8",
+  "version": "0.2.12",
   "description": "RabbitMq Producer and Consumer",
   "main": "./dist/main.js",
   "scripts": {

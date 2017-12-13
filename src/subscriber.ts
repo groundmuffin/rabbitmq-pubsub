@@ -93,7 +93,8 @@ export class RabbitMqSubscriber {
 
     protected getQueueSettings(deadletterExchangeName: string): amqp.Options.AssertQueue {
         return {
-            exclusive: true
+            exclusive: true,
+            autoDelete: true
         }
     }
 

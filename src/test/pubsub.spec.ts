@@ -58,8 +58,8 @@ describe("RabbitMQ pub sub test", () => {
     it("Subscriber should recieve message from Publisher (with _subscribe method)", (done) => {
         const spy = sinon.spy()
         const factory = new RabbitMqConnectionFactory(logger, config);
-        const consumer = new RabbitMqSubscriber(logger, factory)
-        return consumer._subscribe<IMessage>(queueName, spy).then(({disposer, channel}) => {
+        const consumer = new RabbitMqSubscriber(logger, factory);
+        return consumer._subscribe<IMessage>(queueName, spy).then(({disposer, subscription}) => {
             const producer = new RabbitMqPublisher(logger, factory)
             const msg: IMessage = { data: "time", value: new Date().getTime() };
 

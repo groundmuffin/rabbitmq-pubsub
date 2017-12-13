@@ -15,7 +15,7 @@ export class RabbitMqSubscriber {
         this.logger = createChildLogger(logger, "RabbitMqConsumer");
     }
 
-    _subscribe<T>(queue: string | IQueueNameConfig, action: (message: T) => Promisefy<any> | void): any {
+    _subscribe<T>(queue: string | IQueueNameConfig, action: (message: T) => Promisefy<any> | void): Promisefy<any> {
       const queueConfig = asPubSubQueueNameConfig(queue);
         return this.connectionFactory.create()
             .then(connection => connection.createChannel())
@@ -26,13 +26,13 @@ export class RabbitMqSubscriber {
                         this.logger.debug("queue name generated for subscription queue '(%s)' is '(%s)'", queueConfig.name, queueName);
                         var queConfig = { ...queueConfig, dlq: queueName}
                         return this.subscribeToChannel<T>(channel, queueConfig, action)
-                            .then(disposer => ({
+                            .then(disposer => Promisefy.resolve({
                                 disposer,
                                 subscription: {
                                     channel,
                                     queueConfig: queConfig
                                 }
-                            }))
+                            }));
                     });
             });
     }

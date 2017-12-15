@@ -75,7 +75,7 @@ export class RabbitMqSubscriber {
             this.logger.trace("subscribed to queue '%s' (%s)", queueConfig.name, opts.consumerTag)
             return (() => {
                 this.logger.trace("disposing subscriber to queue '%s' (%s)", queueConfig.name, opts.consumerTag)
-                return Promisefy.resolve(channel.cancel(opts.consumerTag)).return();
+                return Promisefy.resolve(channel.cancel(opts.consumerTag).then(() => channel.close())).return();
             }) as IRabbitMqSubscriberDisposer
         });
     }

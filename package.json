@@ -27,7 +27,8 @@
   "dependencies": {
     "@types/amqplib": "^0.5.7",
     "@types/bunyan": "0.0.35",
-    "amqplib": "^0.5.1"
+    "amqplib": "^0.5.1",
+    "dtrace-provider": "^0.8.6"
   },
   "devDependencies": {
     "@types/bluebird": "^3.5.20",
